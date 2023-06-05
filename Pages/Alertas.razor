@@ -1,0 +1,753 @@
+﻿<TelerikRootComponent>
+
+    @*@page "/alertas"*@
+@page "/alertas/{Userid:int}"
+@page "/alertas/{Userid:int}/{Companyid:int}"
+@inject smstemp.Interfaces.Blazor_IAdminAlarmas AdminAlarmasServices
+@inject smstemp.Interfaces.Blazor_IListados IListadosService
+
+@inject IJSRuntime JsInterop
+    <TelerikAnimationContainer @ref="@Cargando" AnimationType=@AnimationType.SlideUp>
+        <div class="loading-bar" />
+    </TelerikAnimationContainer>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="font-bold no-margins">
+            Configuración de alertas de Temperatura.
+        </h3>
+        <small>Reportes de temperatura histórica.</small>
+    </div>
+    <div class="panel-body">
+        @*@if (DatoSeleccionado != null)
+        {
+            <h6>@DatoSeleccionado.name</h6>
+
+        }*@
+        <TelerikWindow Class="ClaseWindow" Modal="true" @bind-Visible="@isModalVisible">
+            <WindowTitle>
+
+                @if (BanderaOperacion)
+                {
+                    <strong>Ingresar nueva configuración de alarma. </strong>
+                }
+                else
+                {
+                    <strong>Modificar configuración de alarmas del vehículo @NombreVehiculoModificar </strong>
+                }
+
+
+            </WindowTitle>
+            <WindowContent>
+                <div class="container-fluid">
+                    
+                        @*<div class='col-12 col-lg-12'>*@
+
+                            <TelerikTabStrip TabPosition="Telerik.Blazor.TabPosition.Top" @ref="myTabStrip" >
+                                <TabStripTab Title="Paso 1" >
+                                    @if (BanderaOperacion)
+                                    {<div class="row">
+                                            <div class='col-lg-6'>
+                                                <div class="form-group">
+                                                    <hr />
+                                                    <div class="form-inline">
+                                                        <b><label style="font-size: large;"> Seleccione la subflota.</label></b>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="form-inline">
+                                                        <div class="form-group mx-sm-3 mb-2">
+                                                            <label for="select-date">Subflota:</label> &nbsp;&nbsp;
+                                                        </div>
+                                                        <div class="form-group mx-sm-3 mb-2">
+                                                            <TelerikDropDownList @bind-Value="ValorListSubflota" Data="@dataListSubflota"
+                                                                                 ValueField="Id" TextField="Valor" Width="209px" OnChange="@onChangeSubflota">
+                                                            </TelerikDropDownList>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class='col-lg-6'>
+                                                <div class="form-group">
+                                                    <hr />
+                                                    <div class="form-inline">
+                                                        <b>
+                                                            <label style="font-size: large;">  Seleccione el vehículo.</label>
+                                                        </b>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="form-inline">
+                                                        <div class="form-group mx-sm-3 mb-2">
+                                                            <label for="select-date">Vehículo:</label> &nbsp;&nbsp;
+                                                            <div class="form-group mx-sm-3 mb-2">
+                                                                <TelerikDropDownList @bind-Value="ValorListVehiculo" Data="@dataListMobile"
+                                                                                     ValueField="Id" TextField="Valor" Width="200px" OnChange="@onChangeMobile">
+                                                                </TelerikDropDownList>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>}
+                                    <div class="form-group">
+                                        <hr />
+                                        <div class="form-inline">
+                                            <b>
+                                                <label style="font-size: large;"> Seleccione rango de tiempo.</label>
+                                            </b>
+
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-inline">
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <label for="select-date">Hora Inicio:</label>&nbsp;&nbsp;
+                                                <TelerikDateTimePicker Format="dd MMM yyyy HH:mm:ss " @bind-Value="@fechaini"></TelerikDateTimePicker>
+                                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                                                <label for="select-date">Hora Fin:</label>&nbsp;&nbsp;
+                                                <TelerikDateTimePicker Format="dd MMM yyyy HH:mm:ss" @bind-Value="@fechafin"></TelerikDateTimePicker>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <hr />
+                                        <div class="form-inline">
+                                            <b>
+                                                <label style="font-size: large;"> Seleccione los días a repetir.</label>
+                                            </b>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        @*<TelerikCheckBox Id="chkDia1" @bind-Value="@chkDiaSelected1" />
+            <label for="myCheckBox">@( chkDiaSelected1 ? "Selected" : "Not selected" )</label>*@
+                                        <div class="form-inline">
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia1" @bind-Value="@chkDiaSelected1" />
+                                                <label for="chkDia1">&nbsp;&nbsp;Lunes </label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia2" @bind-Value="@chkDiaSelected2" />
+                                                <label for="chkDia2">&nbsp;&nbsp;Martes</label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia3" @bind-Value="@chkDiaSelected3" />
+                                                <label for="chkDia3">&nbsp;&nbsp;Miercoles</label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia4" @bind-Value="@chkDiaSelected4" />
+                                                <label for="chkDia4">&nbsp;&nbsp;Jueves</label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia5" @bind-Value="@chkDiaSelected5" />
+                                                <label for="chkDia5">&nbsp;&nbsp;Viernes</label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia6" @bind-Value="@chkDiaSelected6" />
+                                                <label for="chkDia6">&nbsp;&nbsp;Sabado</label>
+                                            </div>
+                                            <div class="form-group mx-sm-3 mb-2">
+                                                <TelerikCheckBox Id="chkDia7" @bind-Value="@chkDiaSelected7" />
+                                                <label for="chkDia7">&nbsp;&nbsp;Domingo</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TabStripTab>                               
+                                <TabStripTab Title="Paso 2">                                    
+                                    <div class="row" style="width: 800px;">
+                                        <div class='col-lg-6'>
+                                            <div class="form-group">
+                                                <hr />
+                                                <div class="form-inline">
+                                                    <b>
+                                                        <label style="font-size: large;"> Seleccione el estado de la alarma.</label>
+                                                    </b>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="form-inline">
+                                                    <div class="form-group mx-sm-3 mb-2">
+                                                        <label for="select-date">Estado:</label>
+                                                    </div>
+                                                    <div class="form-group mx-sm-3 mb-2">
+
+                                                        @if (BanderaOperacion)
+                                                        {
+                                                            <TelerikDropDownList @bind-Value="ValorListActivo" Data="@dataListActivo"
+                                                                                 ValueField="Id" TextField="Valor" Width="130px" Enabled="false">
+                                                            </TelerikDropDownList>
+                                                        }
+                                                        else
+                                                        {
+                                                            <TelerikDropDownList @bind-Value="ValorListActivo" Data="@dataListActivo"
+                                                                                 ValueField="Id" TextField="Valor" Width="130px">
+                                                            </TelerikDropDownList>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class='col-lg-6'>
+                                            <div class="form-group">
+                                                <hr />
+                                                <div class="form-inline">
+                                                    <b>
+                                                        <label style="font-size: large;"> Tiempo a evaluar los sensores.</label>
+                                                    </b>
+                                                </div>
+                                            </div>
+                                            <div class="form-inline">
+                                                <div class="form-group mx-sm-3 mb-2">
+                                                    <label for="select-date">Rango de tiempo :</label>
+                                                </div>
+                                                <div class="form-group mx-sm-3 mb-2">
+                                                    <TelerikDropDownList @bind-Value="ValorListTiempo" Data="@dataListTiempo"
+                                                                         ValueField="Id" TextField="Valor" Width="130px">
+                                                    </TelerikDropDownList>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="form-group">
+                                            <hr />
+                                            <div class="form-inline">
+                                                <b>
+                                                    <label style="font-size: large;"> Rango de temperatura a notificar por sensor.</label>
+                                                </b>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class='col-lg-6'>
+                                                <div class="form-group">
+                                                    <label style="color:#3ca2bb;">Sensor A</label>
+                                                    <div class="form-inline">
+                                                        <SliderPlantilla id="sliderA" @bind-ValueLow="ValorMinA" @bind-ValueHigh="ValorMaxA" />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label style="color:#3ca2bb;">Sensor B</label>
+
+                                                    <div class="form-inline">
+                                                        <SliderPlantilla id="sliderB" @bind-ValueLow="ValorMinB" @bind-ValueHigh="ValorMaxB" />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label style="color:#3ca2bb;">Sensor C</label>
+
+                                                    <div class="form-inline">
+                                                        <SliderPlantilla id="sliderC" @bind-ValueLow="ValorMinC" @bind-ValueHigh="ValorMaxC" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class='col-lg-6'>
+                                                @if (cantSensoresVehiculoModificar >= 4)
+                                                {
+                                                    <div class="form-group">
+                                                        <label style="color:#3ca2bb;">Sensor D</label>
+
+                                                        <div class="form-inline">
+                                                            <SliderPlantilla id="sliderD" @bind-ValueLow="ValorMinD" @bind-ValueHigh="ValorMaxD" />
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (cantSensoresVehiculoModificar >= 5)
+                                                {
+                                                    <div class="form-group">
+                                                        <label style="color:#3ca2bb;">Sensor E</label>
+
+                                                        <div class="form-inline">
+                                                            <SliderPlantilla id="sliderE" @bind-ValueLow="ValorMinE" @bind-ValueHigh="ValorMaxE" />
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (cantSensoresVehiculoModificar >= 6)
+                                                {
+                                                    <div class="form-group">
+                                                        <label style="color:#3ca2bb;">Sensor F</label>
+
+                                                        <div class="form-inline">
+                                                            <SliderPlantilla id="sliderF" @bind-ValueLow="ValorMinF" @bind-ValueHigh="ValorMaxF" />
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class='col-12 col-lg-12' style=" text-align: right; padding-right: 40px;">
+                                        @if (BanderaOperacion)
+                                        {
+                                            <TelerikButton class="btn btn-primary" OnClick="@Insertar">Ingresar </TelerikButton>
+                                        }
+                                        else
+                                        {
+                                            <TelerikButton class="btn btn-primary" OnClick="@Actualizar">Actualizar </TelerikButton>
+                                        }
+                                    </div>
+                                </TabStripTab>
+                            </TelerikTabStrip>
+
+                           
+                          
+                            
+                           
+                          
+
+                        @*</div>*@
+                        
+
+                 
+                </div>
+            </WindowContent>
+            <WindowActions>
+                <WindowAction Name="Close" />
+            </WindowActions>
+        </TelerikWindow>
+
+        <TelerikGrid Data="@dataGrid" Height="800px" Width="-webkit-fill-available;"
+                     Pageable="true" Sortable="true" Groupable="true"
+                     FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+                     Resizable="true" Reorderable="true" PageSize="20"
+                     SelectionMode="GridSelectionMode.Single"
+                     SelectedItemsChanged="@((IEnumerable<AdminAlarmas_Obtener> employeeList) => OnSelect(employeeList))"
+                     SelectedItems="@SelectedItems">
+            <GridToolBar>
+                <GridCommandButton Icon="add" OnClick="@NuevaAlarma">Configuración de Alarma</GridCommandButton>
+                <GridCommandButton Command="ExcelExport" Icon="@IconName.FileExcel">Exportar</GridCommandButton>
+                <label><TelerikCheckBox @bind-Value="@ExportAllPages" /> Todas las paginas</label>
+            </GridToolBar>
+            <GridExport>
+                <GridExcelExport FileName="Alertas_Temperatura" AllPages="@ExportAllPages" />
+            </GridExport>
+            <GridColumns>
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.subflota))" Title="Subflota" Groupable="false" Width="200px" Locked="true" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.placa))" Title="Placa" Groupable="false" Width="200px" Locked="true" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.alias))" Title="Alias" Groupable="false" Width="200px" Locked="true" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s1Min))" Title="A (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s1Max))" Title="A (max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s2Min))" Title="B (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s2Max))" Title="B (max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s3Min))" Title="C (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s3Max))" Title="C (max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s4Min))" Title="D (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s4Max))" Title="D (max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s5Min))" Title="E (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s5Max))" Title="E(max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s6Min))" Title="F (min)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.s6Max))" Title="F (max)" Width="120px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.HoraInicio))" Title="Hora Inicio" Width="200px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.HoraFinal))" Title="Hora Final" Width="200px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.alarma))" Title="Estado" Width="150px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.dias))" Title="Dias" Width="150px" />
+                <GridColumn Field="@(nameof(AdminAlarmas_Obtener.tiempoAlarma))" Title="Alarma" Width="150px" />
+            </GridColumns>
+        </TelerikGrid>
+        <div class="notification-container mt-3">
+            <TelerikAnimationContainer @ref="@NotificacionExito" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                <div class="k-widget k-popup k-notification k-notification-info-sucess">
+                    <h3>Aviso</h3><p>
+                        <TelerikIcon Icon="@IconName.Check" />
+                        Datos actualizados con exito.
+                    </p>
+                </div>
+            </TelerikAnimationContainer>
+        </div>
+        <div class="notification-container mt-3">
+            <TelerikAnimationContainer @ref="@NotificacionAviso" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                <div class="k-widget k-popup k-notification k-notification-info-alerta">
+                    <h3>Advertencia</h3><p>
+                        <TelerikIcon Icon="@IconName.Warning" />
+                        No hay alertas configuradas.
+                    </p>
+                </div>
+            </TelerikAnimationContainer>
+        </div>
+        <div class="notification-container mt-3">
+            <TelerikAnimationContainer @ref="@NotificacioError" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                <div class="k-widget k-popup k-notification k-notification-info-error">
+                    <h3>Error</h3><p>
+                        <TelerikIcon Icon="@IconName.CloseCircle" />
+                        Error al consultar los datos.
+                    </p>
+                </div>
+            </TelerikAnimationContainer>
+        </div>
+        <div class="notification-container mt-3">
+            <TelerikAnimationContainer @ref="@NotificacionInsertar" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                <div class="k-widget k-popup k-notification k-notification-info-load">
+                    <p>
+                        @*style="width: 30px; height: 30px; float:right"*@
+                        <TelerikIcon Icon="@IconName.Zoom" />
+                        Alarma ingresada con exito.
+
+
+                    </p>
+                </div>
+            </TelerikAnimationContainer>
+        </div>
+    </div>
+</div>
+@code {
+    @using Telerik.Blazor.Components;
+    [Parameter]
+    public int Userid { get; set; }
+    [Parameter]
+    public int Companyid { get; set; }
+
+    Telerik.Blazor.Components.TelerikTabStrip myTabStrip;
+    public TelerikAnimationContainer Cargando { get; set; }
+    bool ExportAllPages { get; set; } = true;
+    public bool BanderaOperacion { get; set; } = true; // 1 - Insertar    2 -  Modificaion
+    public string NombreVehiculoModificar { get; set; }
+    public int mobileVehiculoModificar { get; set; }
+    public int cantSensoresVehiculoModificar { get; set; }
+    IEnumerable<Listados> dataListActivo;
+    IEnumerable<Listados> dataListTiempo;
+    IEnumerable<Listados> dataListMobile;
+    IEnumerable<Listados> dataListSubflota;
+    IEnumerable<smstemp.Models.AdminAlarmas_Obtener> dataGrid;
+    private DateTime fechaini = DateTime.Now;
+    private DateTime fechafin = DateTime.Now;
+    public IEnumerable<AdminAlarmas_Obtener> SelectedItems { get; set; } = Enumerable.Empty<AdminAlarmas_Obtener>();
+    public List<AdminAlarmas_Obtener> GridData { get; set; }
+    public AdminAlarmas_Obtener DatoSeleccionado { get; set; }
+    public List<AdminAlarmas_Obtener> TeamMatesList { get; set; }
+
+    public int ValorListSubflota { get; set; } // Listado de subflotas
+    public int ValorListVehiculo { get; set; } // Listado de Vehiculo
+    public int ValorListVehiculoCantidad { get; set; } // Listado de Vehiculo
+    public int ValorListActivo { get; set; } // listado de activo
+    public int ValorListTiempo { get; set; } // listado de rango de tiempos
+    public int ValorAlarmaTempid { get; set; } // id de la alert
+    /*  -------------------------------------VALORES DE SENSORES (MINIMOS Y MAXIMOS)----------------------------------------------*/
+    public int ValorMinA { get; set; }
+    public int ValorMaxA { get; set; }
+    public int ValorMinB { get; set; }
+    public int ValorMaxB { get; set; }
+    public int ValorMinC { get; set; }
+    public int ValorMaxC { get; set; }
+    public int ValorMinD { get; set; }
+    public int ValorMaxD { get; set; }
+    public int ValorMinE { get; set; }
+    public int ValorMaxE { get; set; }
+    public int ValorMinF { get; set; }
+    public int ValorMaxF { get; set; }
+    /*  -----------------------------------------------------------------------------------*/
+    string theTbValue { get; set; } // Tiempo de alarma
+    bool chkDiaSelected1 { get; set; } // chk lunes
+    bool chkDiaSelected2 { get; set; }// chk martes
+    bool chkDiaSelected3 { get; set; }// chk mier
+    bool chkDiaSelected4 { get; set; }// chk juev
+    bool chkDiaSelected5 { get; set; }// chk vie
+    bool chkDiaSelected6 { get; set; }// chk sab
+    bool chkDiaSelected7 { get; set; }// chk dom
+    bool isModalVisible { get; set; } = false;
+    bool ProcesoExitoMod { get; set; } = false;
+    bool ProcesoExitoInsert { get; set; } = false;
+
+    //public void AddChartSeries()
+    //{
+    //    List<ChartSeries> seriesCollection = new List<ChartSeries>();
+    //    seriesCollection.Add(new ChartSeries { Name = nameof(MyDataModel.XValue), XName = nameof(MyDataModel.XValue), YName = nameof(MyDataModel.YValue), DataSource = this.GetData(), Fill = colors[rnd.Next(colors.Length - 1)], Animation = new ChartSeriesAnimation { Enable = false } });
+    //    Chartobj.AddSeries(seriesCollection);
+    //}
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        dataListMobile = await IListadosService.GetListados(Userid, Companyid, 2274, 9);
+        dataListSubflota = await IListadosService.GetListados(Userid, Companyid, 0, 10);
+        dataListActivo = await IListadosService.GetListados(Userid, Companyid, 0, 7);
+        dataListTiempo = await IListadosService.GetListados(Userid, Companyid, 0, 8);
+        dataGrid = await AdminAlarmasServices.GetObtenerAlarmas(Userid, Companyid);
+        SelectedItems = new List<AdminAlarmas_Obtener> { dataGrid.FirstOrDefault() };
+        DatoSeleccionado = dataGrid.FirstOrDefault();
+        await SelecccionDefaultList();
+        if (dataGrid.Count() == 0)
+        {
+            await NotificacionAdvertencia();
+        }
+
+    }
+
+    public async Task CargaDatos()
+    {
+        dataGrid = await AdminAlarmasServices.GetObtenerAlarmas(Userid, Companyid);
+
+    }
+
+    public async Task SelecccionDefaultList()
+    {
+        /*-------Cargas en Select(0) primer item de drodpwnlist--------------------*/
+        ValorListActivo = dataListActivo.FirstOrDefault().Id;
+        ValorListTiempo = dataListTiempo.FirstOrDefault().Id;
+        ValorListSubflota = dataListSubflota.FirstOrDefault().Id;
+        await onChangeSubflotaResultado(ValorListSubflota);
+        ValorListVehiculo = dataListMobile.FirstOrDefault().Id;
+        cantSensoresVehiculoModificar = dataListMobile.FirstOrDefault().CantidadSensorT;
+    }
+    string result;
+    int subf;
+    int idmobile;
+    void onChangeSubflota(object theUserInput)
+    {
+        subf = (int)theUserInput;
+        Task.Run(async () =>
+        {
+            await onChangeSubflotaResultado(subf);
+        });
+    }
+
+    public List<Listados> SeriesListado { get; set; }
+
+    void onChangeMobile(object theUserInput)
+    {
+        var data = (IEnumerable<smstemp.Models.Listados>)dataListMobile;
+        SeriesListado = (data as IEnumerable<Listados>).ToList();
+        idmobile = (int)theUserInput;
+        for (int i = 0, len = dataListMobile.Count(); i < len; i++)
+        {
+            if (SeriesListado[i].Id == idmobile) {
+                cantSensoresVehiculoModificar = SeriesListado[i].CantidadSensorT;
+            }
+        }
+
+    }
+    protected async Task onChangeSubflotaResultado(int SubflotaID)
+    {
+        dataListMobile = await IListadosService.GetListados(Userid, Companyid, SubflotaID, 9);
+        ValorListVehiculo = dataListMobile.FirstOrDefault().Id;
+        cantSensoresVehiculoModificar = dataListMobile.FirstOrDefault().CantidadSensorT;
+    }
+
+
+    protected void OnSelect(IEnumerable<AdminAlarmas_Obtener> DataEstadoActual)
+    {
+        isModalVisible = true;
+        BanderaOperacion = false;  // 1 - Insertar    2 -  Modificaion
+
+        DatoSeleccionado = DataEstadoActual.FirstOrDefault();
+        SelectedItems = new List<AdminAlarmas_Obtener> { DatoSeleccionado };
+        ValorAlarmaTempid = DatoSeleccionado.AlarmaTempid;
+
+        NombreVehiculoModificar = DatoSeleccionado.alias;
+        mobileVehiculoModificar = DatoSeleccionado.mobileid;
+        cantSensoresVehiculoModificar = DatoSeleccionado.cantSensores;
+
+        /*seleccionando dias del item*/
+        chkDiaSelected1 = Convert.ToBoolean(DatoSeleccionado.lun);
+        chkDiaSelected2 = Convert.ToBoolean(DatoSeleccionado.mar);
+        chkDiaSelected3 = Convert.ToBoolean(DatoSeleccionado.mie);
+        chkDiaSelected4 = Convert.ToBoolean(DatoSeleccionado.jue);
+        chkDiaSelected5 = Convert.ToBoolean(DatoSeleccionado.vie);
+        chkDiaSelected6 = Convert.ToBoolean(DatoSeleccionado.sab);
+        chkDiaSelected7 = Convert.ToBoolean(DatoSeleccionado.dom);
+
+        /*seleccionando minimos y maximos del item*/
+        ValorMinA = Convert.ToInt32(DatoSeleccionado.s1Min);
+        ValorMaxA = Convert.ToInt32(DatoSeleccionado.s1Max);
+        ValorMinB = Convert.ToInt32(DatoSeleccionado.s2Min);
+        ValorMaxB = Convert.ToInt32(DatoSeleccionado.s2Max);
+        ValorMinC = Convert.ToInt32(DatoSeleccionado.s3Min);
+        ValorMaxC = Convert.ToInt32(DatoSeleccionado.s3Max);
+        ValorMinD = Convert.ToInt32(DatoSeleccionado.s4Min);
+        ValorMaxD = Convert.ToInt32(DatoSeleccionado.s4Max);
+        ValorMinE = Convert.ToInt32(DatoSeleccionado.s5Min);
+        ValorMaxE = Convert.ToInt32(DatoSeleccionado.s5Max);
+        ValorMinF = Convert.ToInt32(DatoSeleccionado.s6Min);
+        ValorMaxF = Convert.ToInt32(DatoSeleccionado.s6Max);
+
+
+        /*seleccionando fechas del item*/
+        fechaini = DatoSeleccionado.HoraInicio;
+        fechafin = DatoSeleccionado.HoraFinal;
+        ValorListActivo = DatoSeleccionado.alarmaEstado;
+        ValorListTiempo = DatoSeleccionado.tiempoAlarma;
+
+        //isModalVisible = true;
+    }
+    private void NuevaAlarma(GridCommandEventArgs args)
+    {
+        isModalVisible = true;
+        BanderaOperacion = true;  // 1 - Insertar    2 -  Modificaion
+        ValorListActivo = 1;
+        onChangeMobile(ValorListVehiculo);
+    }
+
+
+    protected async Task Insertar()
+    {
+        ProcesoExitoInsert = await AdminAlarmasServices.InsertarAlertas(
+         ValorListVehiculo,
+         ValorMinA,
+         ValorMaxA,
+         ValorMinB,
+         ValorMaxB,
+         ValorMinC,
+         ValorMaxC,
+         ValorMinD,
+         ValorMaxD,
+         ValorMinE,
+         ValorMaxE,
+         ValorMinF,
+         ValorMaxF,
+         fechaini,
+         fechafin,
+         Companyid,
+         Convert.ToInt32(chkDiaSelected1), // chk lunes
+         Convert.ToInt32(chkDiaSelected2),// chk martes
+         Convert.ToInt32(chkDiaSelected3),// chk mier
+         Convert.ToInt32(chkDiaSelected4),// chk juev
+         Convert.ToInt32(chkDiaSelected5),// chk vie
+         Convert.ToInt32(chkDiaSelected6),// chk sab
+         Convert.ToInt32(chkDiaSelected7),// chk dom
+         Convert.ToInt32(ValorListTiempo)
+        );
+
+        if (ProcesoExitoMod)
+        {
+            await CargaDatos();
+            isModalVisible = false;
+            ReloadPage();
+            await NotificacionIns();
+        }
+        else
+        {
+            await NotificacionError();
+        }
+    }
+
+    protected async Task Actualizar()
+    {
+        ProcesoExitoMod = await AdminAlarmasServices.ActualizarAlertas(
+        ValorAlarmaTempid,
+             mobileVehiculoModificar,
+             ValorMinA,
+             ValorMaxA,
+             ValorMinB,
+             ValorMaxB,
+             ValorMinC,
+             ValorMaxC,
+             ValorMinD,
+             ValorMaxD,
+             ValorMinE,
+             ValorMaxE,
+             ValorMinF,
+             ValorMaxF,
+             fechaini,
+             fechafin,
+             ValorListActivo,
+             Companyid,
+             Convert.ToInt32(chkDiaSelected1),// chk lunes
+             Convert.ToInt32(chkDiaSelected2),// chk martes
+             Convert.ToInt32(chkDiaSelected3),// chk mier
+             Convert.ToInt32(chkDiaSelected4),// chk juev
+             Convert.ToInt32(chkDiaSelected5),// chk vie
+             Convert.ToInt32(chkDiaSelected6),// chk sab
+             Convert.ToInt32(chkDiaSelected7),// chk dom
+             Convert.ToInt32(ValorListTiempo)
+            );
+
+        if (ProcesoExitoMod)
+        {
+            await CargaDatos();
+            isModalVisible = false;
+            ReloadPage();
+            await NotificacionSucess();
+        }
+        else {
+            await NotificacionError();
+        }
+
+    }
+
+    void ReloadPage()
+    {
+        JsInterop.InvokeVoidAsync("window.location.reload");
+    }
+
+    public TelerikAnimationContainer NotificacionExito { get; set; }
+    protected async Task NotificacionSucess()
+    {
+        await NotificacionExito.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionExito.HideAsync();
+    }
+    public TelerikAnimationContainer NotificacionAviso { get; set; }
+    protected async Task NotificacionAdvertencia()
+    {
+        await NotificacionAviso.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionAviso.HideAsync();
+    }
+
+    public TelerikAnimationContainer NotificacioError { get; set; }
+    protected async Task NotificacionError()
+    {
+        await NotificacioError.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacioError.HideAsync();
+    }
+    public TelerikAnimationContainer NotificacionInsertar { get; set; }
+    protected async Task NotificacionIns()
+    {
+        await NotificacionInsertar.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionInsertar.HideAsync();
+    }
+
+}
+
+<style type="text/css">
+    /* The specially positioned parent of the notification controls its position */
+
+    /*  .k-animation-container {
+        position: fixed;
+        min-height: 200px;
+        right: 2%;
+        bottom: 0%;
+    }*/
+    .notification-container {
+        position: fixed;
+        min-height: 200px;
+        right: 19%;
+        bottom: 7%;
+    }
+
+    .k-notification-info-error {
+        /*rojo error  #D25E52*/
+        border-color: #C62827;
+        background-color: #C62827;
+        color: #fff;
+    }
+
+    .k-notification-info-load {
+        /*rojo error  #D25E52*/
+        border-color: #C62827;
+        background-color: #C62827;
+        color: #fff;
+    }
+
+    .k-notification-info-alerta {
+        /*  rojo aviso*/
+        border-color: #DD7D63;
+        background-color: #DD7D63;
+        color: #fff;
+    }
+
+    .k-notification-info-sucess {
+        /*verde*/
+        border-color: #65B688;
+        background-color: #65B688;
+        color: #fff;
+    }
+    /*.k-content {        
+        width: 800px;*/
+    /* display: table;
+    }   */
+    .k-tabstrip > .k-content.k-state-active {
+        display: table !important;
+    }
+</style>
+
+</TelerikRootComponent>

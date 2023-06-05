@@ -1,0 +1,60 @@
+﻿<label style="font-size: smaller;"> Min. &nbsp; </label> @ValueLow &nbsp;
+<input name="low-range" type="range" min="@MinValue" max="@MaxValue" @bind="@ValueLow" @bind:event="oninput" @attributes="componentes" />
+<label style="font-size: smaller;">&nbsp;&nbsp;&nbsp; Máx. &nbsp;</label>
+<input name="high-range" type="range" min="@MinValue" max="@MaxValue" @bind="@ValueHigh" @bind:event="oninput" @attributes="componentes" />
+&nbsp; @ValueHigh
+@code {
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> componentes { get; set; }
+
+
+    string titulo;
+    int _valueLow = -40;
+    int _valueHigh = 40;
+    [Parameter] public int Width { get; set; } = 200;
+    [Parameter] public int MinValue { get; set; } = -40;
+    [Parameter] public int MaxValue { get; set; } = 40;
+    [Parameter]
+    public int ValueLow
+    {
+        get => Math.Min(_valueLow, _valueHigh);
+        set
+        {
+            if (_valueLow.Equals(value))
+                return;
+            _valueLow = value;
+            if (_valueLow >= _valueHigh)
+            {
+                _valueLow = _valueHigh;
+                _valueHigh = value;
+                ValueHighChanged.InvokeAsync(_valueHigh);
+            }
+            ValueLowChanged.InvokeAsync(_valueLow);
+        }
+    }
+    [Parameter]
+    public int ValueHigh
+    {
+        get => Math.Max(_valueLow, _valueHigh);
+        set
+        {
+
+            if (_valueHigh.Equals(value))
+                return;
+            _valueHigh = value;
+            if (_valueLow >= _valueHigh)
+            {
+                _valueHigh = _valueLow;
+                _valueLow = value;
+                ValueLowChanged.InvokeAsync(_valueLow);
+            }
+            ValueHighChanged.InvokeAsync(_valueHigh);
+        }
+    }
+
+
+    [Parameter] public EventCallback<int> ValueLowChanged { get; set; }
+    [Parameter] public EventCallback<int> ValueHighChanged { get; set; }
+    string ID = Guid.NewGuid().ToString().Replace("-", "").Substring(15);
+}

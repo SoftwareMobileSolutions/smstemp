@@ -1,0 +1,83 @@
+﻿/* SCROLLBAR */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 10px;
+    background: #eee;
+    box-shadow: 0 0 1px 1px #bbb, inset 0 0 7px rgba(0,0,0,0.3);
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: linear-gradient(left, #96A6BF, #63738C);
+    box-shadow: inset 0 0 1px 1px #5C6670;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(left, #8391A6, #536175);
+    }
+
+.k-grid td, .k-link {
+    font-size: 14px !important;
+}
+
+.k-grid td {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+
+/* ===== Task timer ===== */
+
+.timer-weekdays {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+    .timer-weekdays > li {
+        display: inline-block;
+        margin: 2px 0;
+    }
+
+        .timer-weekdays > li > a {
+            display: block;
+            margin: 0 1px;
+        }
+
+    .timer-weekdays .label-default {
+        background-color: #d5d5d5;
+    }
+
+.timer {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+    .timer label {
+        margin-bottom: 0 !important;
+    }
+
+    .timer > li {
+        font-size: 18px;
+        text-align: center;
+        display: inline-block;
+        color: #555;
+        font-weight: 300;
+    }
+
+        .timer > li.dots {
+            font-size: 16px;
+            vertical-align: top;
+        }
+
+        .timer > li > span {
+            display: block;
+            font-size: 12px;
+        }
+
+

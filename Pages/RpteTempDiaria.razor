@@ -1,0 +1,615 @@
+﻿@*@page "/RpteTempDiaria"*@
+<TelerikRootComponent>
+    @page "/RpteTempDiaria/{Userid:int}"
+    @page "/RpteTempDiaria/{Userid:int}/{Companyid:int}"
+    @inject smstemp.Interfaces.Blazor_IListados IListadosService
+    @inject smstemp.Interfaces.Blazor_IrpteAlertasDiarias IrpteAlertasDiariasService
+    @inject IJSRuntime jsRuntime
+    @using Telerik.Blazor.Components;
+
+    <TelerikAnimationContainer @ref="@Cargando" AnimationType=@AnimationType.SlideUp>
+        <div class="loading-bar" />
+    </TelerikAnimationContainer>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Reporte de Temperatura Diaria
+            </h3>
+            <small>Reportes de temperatura por dia.</small>
+        </div>
+        <div class="panel-body" style="padding: 7px;">
+            <div class="card-deck">
+                <div class="card">
+                    <div class="card-header" style="font-size: 14px;">
+                        <label for="select-date">Fecha Inicio:</label>
+                        <TelerikDateTimePicker Min="@minDate" Max="@maxDateMinValue"
+                                               Format="dd MMM yyyy HH:mm:ss" @bind-Value="@ValorFecha1" Width="250px"></TelerikDateTimePicker>
+                        <label for="select-date">Fecha Fin:</label>
+                        <TelerikDateTimePicker @bind-Value="@ValorFecha2" Max="@maxDate" OnChange="@MyOnChangeHandler"
+                                               Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
+                        <label for="select-date">Rango:</label>
+                        <TelerikDropDownList @bind-Value="ValorListRango" Data="@dataListRango"
+                                             ValueField="Id" TextField="Valor" Width="100px">
+                        </TelerikDropDownList>
+
+                        <label for="select-date">Subflota:</label>
+                        <TelerikDropDownList @bind-Value="ValorListSubflota" Data="@dataListSubflota"
+                                             ValueField="Id" TextField="Valor" Width="250px" OnChange="@onChangeSubflota">
+                        </TelerikDropDownList>
+                        <label for="select-date">Vehículo:</label>
+                        <TelerikDropDownList @bind-Value="ValorListVehiculo" Data="@dataListMobile"
+                                             ValueField="Id" TextField="Valor" Width="200px">
+                        </TelerikDropDownList>
+                        <TelerikButton class="btn btn-primary" OnClick="@Consultar">Consultar </TelerikButton>
+
+                        @*<TelerikComboBox Data="@DataVehiculo"
+                                             @bind-Value="@SelectedValue"
+                                             Placeholder="Seleccione Vehículo"
+                                             Width="200px"
+                                             Filterable="true">
+                            </TelerikComboBox>
+                            <TelerikButton class="btn btn-primary">Consultar </TelerikButton>*@
+                    </div>
+                    <div class="card-body" style="padding: 0.5rem;">
+                        <TelerikWindow Class="ClaseWindow" Modal="true" @bind-Visible="@isModalVisible">
+                            <WindowTitle>
+                                <strong>Área de temperatura :  @VehiculoModal   </strong>
+                            </WindowTitle>
+                            <WindowContent>
+                                <div class="row" style="justify-content: center;">
+                                    <label style=" font-size: larger;">
+                                        Datos del vehículo @VehiculoModal de la ultima fecha de transmisión: @FechaModal
+                                    </label>
+                                </div>
+                                <div class="row">
+                                    <label style="color: white; position: fixed; margin-left: 263px; margin-top: 374px;">@UbicacionSensor1 ºC</label>
+                                    <label style="color: white; position: fixed; margin-left: 595px; margin-top: 322px;">@UbicacionSensor2 ºC</label>
+                                    <label style="color: white; position: fixed; margin-left: 902px; margin-top: 272px;">@UbicacionSensor3 ºC</label>
+                                    <img src="remolqueTempSMS2.jpg" class="image" style="width: 997px;height: 707px;padding-left: 6px;" />
+                                </div>
+                            </WindowContent>
+                            <WindowActions>
+                                <WindowAction Name="Close" />
+                            </WindowActions>
+                        </TelerikWindow>
+                        @if (bandera == true)
+                        {
+                            <h3><label style="text-align: center; display: block;     padding-bottom: 10px;">  Sensores de Temperatura </label></h3>
+                            <div id="graficoDiario">
+                                <TelerikChart Transitions="false">
+                                    <ChartTooltip Visible="true">
+                                        <Template>
+                                            @{ var dataItem = context.DataItem as rpteAlertasDiarias; }
+                                            <div>
+                                                @*<strong>Fecha :</strong> @dataItem.dategps.ToString("H:mm:ss");*@
+                                                <strong>Fecha :</strong> @dataItem.dategps
+                                            </div>
+                                            <div>
+                                                <strong>Promedio  (ºC):</strong> @dataItem.promedio
+                                            </div>
+                                            <div>
+                                                <strong>Sensor A  (ºC):</strong> @dataItem.s1
+                                            </div>
+                                            <div>
+                                                <strong>Sensor B  (ºC):</strong> @dataItem.s2
+                                            </div>
+                                            <div>
+                                                <strong>Sensor B  (ºC):</strong> @dataItem.s3
+                                            </div>
+                                            @if (CountSensor4 == true)
+                                            {
+                                                <div>
+                                                    <strong>Sensor D  (ºC):</strong> @dataItem.s4
+                                                </div>
+                                            }
+                                            @if (CountSensor5 == true)
+                                            {
+                                                <div>
+                                                    <strong>Sensor E (ºC):</strong> @dataItem.s5
+                                                </div>
+                                            }
+                                            @if (CountSensor6 == true)
+                                            {
+                                                <div>
+                                                    <strong>Sensor F  (ºC):</strong> @dataItem.s6
+                                                </div>
+                                            }
+                                            <div>
+                                                <strong>Encendido:</strong> @dataItem.thermoking
+                                            </div>
+                                        </Template>
+                                    </ChartTooltip>
+                                    <ChartLegend Visible="true" Position="ChartLegendPosition.Top"></ChartLegend>
+                                    <ChartSeriesItems>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor A (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s1)" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor B (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s2)" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor C (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s3)" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor D (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s4)" Visible="@CountSensor4" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor E (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s5)" Visible="@CountSensor5" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Sensor F (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.s6)" Visible="@CountSensor6" CategoryField="@nameof(rpteAlertasDiarias.dategps)">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Promedio  (ºC)" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.promedio)" Color="Blue">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="Encendido" Data="@DatosGrafico"
+                                                     Field="@nameof(rpteAlertasDiarias.encendido)" Color="#552243" Axis="secondAxis">
+                                            <ChartSeriesLabels Visible="false"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                    </ChartSeriesItems>
+                                    <ChartValueAxes>
+                                        <ChartValueAxis AxisCrossingValue="@MaximoRangoGrafica">
+                                            <ChartValueAxisLabels Format="{0} ºC"></ChartValueAxisLabels>
+                                        </ChartValueAxis>
+                                        <ChartValueAxis MinorUnit="0" MajorUnit="1" Max="1.2" Min="0" Name="secondAxis">
+                                            <ChartValueAxisLabels Format="{0}"></ChartValueAxisLabels>
+                                            @*<ChartValueAxisTitle Text="Encendido (SI/NO)"></ChartValueAxisTitle>*@
+                                        </ChartValueAxis>
+                                    </ChartValueAxes>
+                                    <ChartCategoryAxes>
+                                        <ChartCategoryAxis BaseUnit="ChartCategoryAxisBaseUnit.Fit" WeekStartDay="1" Type="ChartCategoryAxisType.Category">
+                                            <ChartCategoryAxisLabels Format="{0:dd MMM HH:mm:ss}">
+                                                <ChartCategoryAxisLabelsRotation Angle="-45" />
+                                            </ChartCategoryAxisLabels>
+                                        </ChartCategoryAxis>
+                                    </ChartCategoryAxes>
+                                    @*<ChartCategoryAxes>
+                                            <ChartCategoryAxis>
+                                                <ChartCategoryAxisLabels Format="{0}" Position="ChartAxisLabelsPosition.Start">
+                                                    <ChartCategoryAxisLabelsRotation Angle="-45" />
+                                                </ChartCategoryAxisLabels>
+                                            </ChartCategoryAxis>
+                                        </ChartCategoryAxes>*@
+                                </TelerikChart>
+                            </div>
+                            <hr />
+
+                            Task.Run(async() => { 
+                                await fn_graficos();
+                            });
+                            
+                            @*<GMaps DatosMaps ="@DatosGrafico"/>*@
+                        }
+                        <div class="shadow-sm p-1 mb-1 bg-white rounded mapTempGrafDiario" style="display: none;">
+                            <div id="mapTempGrafDiario" style="height:500px;width:100%;"></div>
+
+                        </div>
+                        <div class="mapTempGrafDiario">
+                            <hr />
+                        </div>
+
+
+
+                        <div class="shadow-sm p-1 mb-1 bg-white rounded">
+                            <TelerikGrid Data="@dataGrid" Height="800px" Width="-webkit-fill-available;"
+                                         Pageable="true" Sortable="true" Groupable="true"
+                                         FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+                                         SelectionMode="GridSelectionMode.Single"
+                                         Resizable="true" Reorderable="true" PageSize="50" OnRowDoubleClick="@OnRowDoubleClickHandler">
+                                <GridToolBar>
+
+                                    <GridCommandButton Command="ExcelExport" Icon="@IconName.FileExcel">Exportar</GridCommandButton>
+
+                                    <label><TelerikCheckBox @bind-Value="@ExportAllPages" /> Todas las paginas</label>
+                                    <GridCommandButton Icon="thumbnails-right" OnClick="@UbicacionSensores"> Ubicación Sensores</GridCommandButton>
+                                </GridToolBar>
+                                <GridExport>
+                                    <GridExcelExport FileName="TemperaturaDiaria" AllPages="@ExportAllPages" />
+                                </GridExport>
+                                <GridColumns>
+                                    @*<GridColumn Field="@(nameof(rpteAlertasDiarias.mobileid))" Title="id" Width="200px" />*@
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.subflota))" Title="Subflota" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.plate))" Title="Placa" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.alias))" Title="Alias" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.dategps))" Title="Fecha GPS" Width="200px" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.thermoking))" Title="Encendido" Width="100px" />
+                                    @{
+
+
+
+                                        if (latLngVisible)
+                                        {
+                                            <GridColumn Field="@(nameof(rpteAlertasDiarias.longitud))" Title="Longitud" Width="170px" />
+                                            <GridColumn Field="@(nameof(rpteAlertasDiarias.latitud))" Title="Latitud" Width="170px" />
+                                            <GridColumn Field="@(nameof(rpteAlertasDiarias.localizacion))" Title="Ubicación" Width="400px" />
+                                        }
+
+                                    }
+
+
+
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.promedio))" Title="Promedio (ºC)" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.s1))" Title="Sensor A (ºC)" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.s2))" Title="Sensor B (ºC)" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteAlertasDiarias.s3))" Title="Sensor C (ºC)" Width="120px" />
+                                    @if (CountSensor4 == true)
+                                    {<GridColumn Field="@(nameof(rpteAlertasDiarias.s4))" Title="Sensor D (ºC)" Width="120px" />}
+
+                                    @if (CountSensor5 == true)
+                                    {<GridColumn Field="@(nameof(rpteAlertasDiarias.s5))" Title="Sensor E (ºC)" Width="120px" />}
+
+                                    @if (CountSensor6 == true)
+                                    {<GridColumn Field="@(nameof(rpteAlertasDiarias.s6))" Title="Sensor F (ºC)" Width="120px" />}
+                                </GridColumns>
+                            </TelerikGrid>
+                        </div>
+
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionExito" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-sucess">
+                                    <h3>Aviso</h3><p>
+                                        <TelerikIcon Icon="@IconName.Check" />
+                                        Datos consultados satifactorio.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionAviso" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-alerta">
+                                    <h3>Advertencia</h3><p>
+                                        <TelerikIcon Icon="@IconName.Warning" />
+                                        No hay registro de datos.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacioError" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-error">
+                                    <h3>Error</h3><p>
+                                        <TelerikIcon Icon="@IconName.CloseCircle" />
+                                        Error al consultar los datos.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionCargando" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-load">
+                                    <p>
+                                        @*style="width: 30px; height: 30px; float:right"*@
+                                        <TelerikIcon Icon="@IconName.Zoom" />
+                                        Verificando...
+
+
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @code {
+        [Parameter]
+        public int Userid { get; set; }
+        [Parameter]
+        public int Companyid { get; set; }
+
+
+        //public DateTime EndOfDay(this DateTime date)
+        //{
+        //    return new DateTime(date.Year, date.Month, date.Day, 23, 59, 59, 999);
+        //}
+
+        //public DateTime StartOfDay(this DateTime date)
+        //{
+        //    return new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, 0);
+        //}
+
+
+
+
+
+        public bool latLngVisible = true;
+        public List<int> userSinLatLng = new List<int>() { 5428, 5429 };
+
+
+
+
+
+
+        bool isModalVisible { get; set; } = false;
+        public TelerikAnimationContainer Cargando { get; set; }
+        bool ExportAllPages { get; set; } = true;
+        public int ValorListRango { get; set; }
+        public int ValorListSubflota { get; set; }
+        public int ValorListVehiculo { get; set; }
+        DateTime maxDate { get; set; } = DateTime.Now;
+        DateTime maxDateMinValue { get; set; } = DateTime.Now;
+        DateTime minDate { get; set; } = DateTime.Now.AddDays(-2);
+        private DateTime ValorFecha1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0, 0);//DateTime.Now;
+        private DateTime ValorFecha11 = DateTime.Now;
+        private DateTime ValorFecha2 = DateTime.Now.AddHours(-6);
+        bool bandera = false;
+        bool CountSensor4 = false;
+        bool CountSensor5 = false;
+        bool CountSensor6 = false;
+        public List<rpteAlertasDiarias> DatosGrafico { get; set; }
+        public object[] MaximoRangoGrafica = new object[] { -40 };
+        public object[] MaximoRangoGrafica2 = new object[] { 1 };
+        public float UbicacionSensor1 { get; set; }
+        public float UbicacionSensor2 { get; set; }
+        public float UbicacionSensor3 { get; set; }
+        public float UbicacionSensor4 { get; set; }
+        public float UbicacionSensor5 { get; set; }
+        public float UbicacionSensor6 { get; set; }
+        public string VehiculoModal { get; set; }
+        public DateTime FechaModal { get; set; }
+
+        public string datoFechaInicio { get; set; }
+        public string datoFechaFin { get; set; }
+        //-------------------inyeccion de modelos--------------------
+        IEnumerable<Listados> dataListMobile;
+        IEnumerable<Listados> dataListSubflota;
+        IEnumerable<Listados> dataListRango;
+        IEnumerable<rpteAlertasDiarias> dataGrid;
+
+        //--------------------cargas de inicio ---------------------------
+        protected override async Task OnInitializedAsync()
+        {
+
+            dataListSubflota = await IListadosService.GetListados(Userid, Companyid, 0, 2);
+            dataListRango = await IListadosService.GetListados(Userid, Companyid, 0, 3);
+            // await jsRuntime.InvokeAsync<string>("console.log", "hello world");
+            await SelecccionDefaultList();
+            dataListMobile = await IListadosService.GetListados(Userid, Companyid, ValorListSubflota, 9);
+
+        }
+
+        public async Task fn_graficos()
+        {
+            await jsRuntime.InvokeVoidAsync("HideAxisEachHour", "graficoDiario");
+            await jsRuntime.InvokeVoidAsync("fn_HideShowGraf", "graficoDiario");
+        }
+
+     
+        private void MyOnChangeHandler(object theUserInput)
+        {
+            maxDateMinValue = ((DateTime)theUserInput);
+            minDate = ((DateTime)theUserInput).AddDays(-2);
+        }
+        public async Task Verificar()
+        {
+            minDate = ValorFecha2.AddDays(-3);
+            await jsRuntime.InvokeAsync<string>("console.log", minDate);
+        }
+        public void UbicacionSensores()
+        {
+            isModalVisible = true;
+        }
+
+        public async Task SelecccionDefaultList()
+        {
+            /*-------Cargas en Select(0) primer item de drodpwnlist--------------------*/
+            ValorListSubflota = dataListSubflota.FirstOrDefault().Id;
+            ValorListRango = 20;//dataListRangoFirstOrDefault().Id;
+            await onChangeSubflotaResultado(ValorListSubflota);
+            ValorListVehiculo = dataListMobile.FirstOrDefault().Id;
+        }
+
+
+        //---------------- Funcion de onchanges de subflota------------------------
+        int subf;
+        void  onChangeSubflota(object theUserInput)
+        {
+            subf = (int)theUserInput;
+            Task.Run(async() =>
+            {
+                await onChangeSubflotaResultado(subf);
+            });
+            
+        }
+
+        protected async Task onChangeSubflotaResultado(int SubflotaID)
+        {
+
+            dataListMobile = await IListadosService.GetListados(Userid, Companyid, SubflotaID, 1);
+            ValorListVehiculo = dataListMobile.FirstOrDefault().Id;
+        }
+        //------------------------- Carga de datos de boton consultar-------------------------------
+        async Task OnRowDoubleClickHandler(GridRowClickEventArgs args)
+        {
+            var model = args.Item as rpteAlertasDiarias;
+            await jsRuntime.InvokeAsync<string>("Map_TempGrafDiario.showMarker", model);
+        }
+
+        protected async Task Consultar()
+        {
+            ValorFecha2.AddHours(6);
+            ValorFecha1.AddHours(6);
+            DateTime maxDateAccessIni = DateTime.Now.AddHours(-24);
+            DateTime maxDateAccessFin = DateTime.Now;
+            latLngVisible = true;
+            for (int i = 0, len = userSinLatLng.Count(); i < len; i++)
+            {
+                if (Userid == userSinLatLng[i])
+                {
+                    // latLngVisible = false;
+                    // if (ValorFecha2 > maxDateAccess)
+                    if ((ValorFecha2 >= maxDateAccessIni && ValorFecha2 <= maxDateAccessFin) ||
+                        (ValorFecha1 >= maxDateAccessIni && ValorFecha1 <= maxDateAccessFin))
+                    {
+                        latLngVisible = false;
+                    }
+                    break;
+
+                }
+            }
+            ValorFecha2.AddHours(-6);
+            ValorFecha1.AddHours(-6);
+
+
+
+            datoFechaInicio = ValorFecha1.ToString("yyyyMMdd HH:mm:ss");
+            datoFechaFin = ValorFecha2.ToString("yyyyMMdd HH:mm:ss");
+
+
+
+            await jsRuntime.InvokeAsync<string>("console.log", ValorListVehiculo, datoFechaInicio, datoFechaFin);
+            await Cargando.ShowAsync();
+
+            //int mobileid, DateTime fecha, int RangoTiempo, int companyid
+            dataGrid = await IrpteAlertasDiariasService.GetObtenerAlertasDiarias(ValorListVehiculo, datoFechaInicio, datoFechaFin, ValorListRango, Companyid);
+
+            DatosGrafico = dataGrid.ToList();
+            var maxcount = DatosGrafico.Count();
+            maxcount = maxcount - 1;
+
+            //var datagridjs = dataGrid.Cast<RpteTempDiaria>().ToList();
+            // await jsRuntime.InvokeAsync<string>("console.log", datagridjs);
+
+
+            if (DatosGrafico.Count() > 0)
+            {
+                bandera = true;
+                UbicacionSensor1 = DatosGrafico[maxcount].s1;
+                UbicacionSensor2 = DatosGrafico[maxcount].s2;
+                UbicacionSensor3 = DatosGrafico[maxcount].s3;
+                UbicacionSensor4 = DatosGrafico[maxcount].s4;
+                UbicacionSensor5 = DatosGrafico[maxcount].s5;
+                UbicacionSensor6 = DatosGrafico[maxcount].s6;
+                VehiculoModal = DatosGrafico[maxcount].alias;
+                FechaModal = DatosGrafico[maxcount].dategps;
+                if (DatosGrafico[0].cantidadSensorT == 4)
+                {
+                    CountSensor4 = true;
+                }
+                else { CountSensor4 = false; }
+                if (DatosGrafico[0].cantidadSensorT == 5)
+                {
+                    CountSensor4 = true;
+                    CountSensor5 = true;
+                }
+                else { CountSensor4 = false; CountSensor5 = false; }
+                if (DatosGrafico[0].cantidadSensorT == 6)
+                {
+                    CountSensor4 = true;
+                    CountSensor5 = true;
+                    CountSensor6 = true;
+                }
+                else { CountSensor4 = false; CountSensor5 = false; CountSensor6 = false; }
+            }
+            else { bandera = false; await NotificacionAdvertencia(); }
+
+
+
+            // await jsRuntime.InvokeAsync<string>("Map_TempGrafDiario.latlngview", latLngVisible);
+            if (latLngVisible)
+            {
+                await jsRuntime.InvokeAsync<string>("Map_TempGrafDiario.mapShow", true);
+                await jsRuntime.InvokeAsync<string>("Map_TempGrafDiario.createmap", DatosGrafico);
+            }
+            else
+            {
+                await jsRuntime.InvokeAsync<string>("Map_TempGrafDiario.mapShow", false);
+            }
+
+
+
+            //await Task.Delay(1500);
+            await Cargando.HideAsync();
+
+        }
+
+        public TelerikAnimationContainer NotificacionExito { get; set; }
+        protected async Task NotificacionSucess()
+        {
+            await NotificacionExito.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionExito.HideAsync();
+        }
+        public TelerikAnimationContainer NotificacionAviso { get; set; }
+        protected async Task NotificacionAdvertencia()
+        {
+            await NotificacionAviso.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionAviso.HideAsync();
+        }
+
+        public TelerikAnimationContainer NotificacioError { get; set; }
+        protected async Task NotificacionError()
+        {
+            await NotificacioError.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacioError.HideAsync();
+        }
+        public TelerikAnimationContainer NotificacionCargando { get; set; }
+        protected async Task NotificacionLoad()
+        {
+            await NotificacionCargando.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionCargando.HideAsync();
+        }
+    }
+
+    <style type="text/css">
+        /* The specially positioned parent of the notification controls its position */
+
+        /*  .k-animation-container {
+            position: fixed;
+            min-height: 200px;
+            right: 2%;
+            bottom: 0%;
+        }*/
+        .notification-container {
+            position: fixed;
+            min-height: 200px;
+            right: 19%;
+            bottom: 7%;
+        }
+
+        .k-notification-info-error {
+            /*rojo error  #D25E52*/
+            border-color: #C62827;
+            background-color: #C62827;
+            color: #fff;
+        }
+
+        .k-notification-info-load {
+            /*rojo error  #D25E52*/
+            border-color: #C62827;
+            background-color: #C62827;
+            color: #fff;
+        }
+
+        .k-notification-info-alerta {
+            /*  rojo aviso*/
+            border-color: #DD7D63;
+            background-color: #DD7D63;
+            color: #fff;
+        }
+
+        .k-notification-info-sucess {
+            /*verde*/
+            border-color: #65B688;
+            background-color: #65B688;
+            color: #fff;
+        }
+    </style>
+</TelerikRootComponent>
+@*Formato de fechas en columna de grid*@
+@*<telerik:GridDateTimeColumn DataField="ShippedDate" DataType="System.DateTime"
+                                DataFormatString="{0:dd MMMM yyyy hh:mm tt}"
+                                HeaderText="ShippedDate" SortExpression="ShippedDate" UniqueName="ShippedDate">
+    </telerik:GridDateTimeColumn>*@

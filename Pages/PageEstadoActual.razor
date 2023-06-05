@@ -1,0 +1,467 @@
+﻿<TelerikRootComponent>
+    @page "/PageEstadoActual/{Userid:int}"
+    @page "/PageEstadoActual/{Userid:int}/{Companyid:int}"
+
+    @inject Blazor_IEstadoActual EstadoActualService
+    @inject smstemp.Interfaces.Blazor_IListados IListadosService
+    @inject IJSRuntime jsRuntime
+    @using Telerik.Blazor.Components;
+
+    <TelerikAnimationContainer @ref="@Cargando" AnimationType=@AnimationType.SlideUp>
+        <div class="loading-bar" />
+    </TelerikAnimationContainer>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Estado Actual
+            </h3>
+            <small>Estados de temperatura de todas las unidades.</small>
+        </div>
+        <div class="panel-body">
+            @*CONTRASEÑAS  : @Userid y @Companyid*@
+            <TelerikWindow Class="ClaseWindow" Modal="true" @bind-Visible="@isModalVisible">
+                <WindowTitle>
+                    <strong>Área de temperatura :   @NombreVehiculoModificar </strong>
+                </WindowTitle>
+                <WindowContent>
+                    <label style="color: white; position: fixed; margin-left: 263px; margin-top: 374px;">@Sensor1 ºC</label>
+                    <label style="color: white; position: fixed; margin-left: 595px; margin-top: 322px;">@Sensor2 ºC</label>
+                    <label style="color: white; position: fixed; margin-left: 902px; margin-top: 272px;">@Sensor3 ºC</label>
+                    <img src="remolqueTempSMS2.jpg" class="image" style="width: 997px;height: 707px;padding-left: 6px;" />
+                </WindowContent>
+                <WindowActions>
+                    <WindowAction Name="Close" />
+                </WindowActions>
+            </TelerikWindow>
+
+            <div class="card-deck">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <label for="select-date">Tipo de vehículo:</label>
+                                <TelerikDropDownList @bind-Value="ValorListTipoVehiculo" Data="@dataListTipoVehiculo"
+                                                     ValueField="Id" TextField="Valor" Width="250px">
+                                </TelerikDropDownList>
+                                <TelerikButton class="btn btn-primary consultar" OnClick="@Consultar">Consultar </TelerikButton>
+                            </div>
+                            <div class="col-lg-6 text-right">
+                                <div class="row">
+                                    <div class="col-sm-10 contador text-right" style="padding-right: 0;">
+                                        <label>Tiempo de actualización(minutos)</label>
+                                        <TelerikNumericTextBox Width="75px" Max="10" Min="1" Step="1" Value="1"></TelerikNumericTextBox>
+                                    </div>
+                                    <div class="col-sm-2 text-right">
+                                        <ul class="timer" style="font-size: 12px;">
+                                            <li>
+                                                <label id="minutos">00</label> <span>mm</span>
+                                            </li>
+                                            <li class="dots">:</li>
+                                            <li>
+                                                <label id="segundos">00</label><span>ss</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+
+                                @*@if (CargandoGif)
+                                    {
+                                    <img src="loading-12.gif" class="image" style="width: 30px; height: 30px; float:right" />
+                                    }*@
+
+                                @*<TelerikAnimationContainer @ref="@AnimationContainer">
+                                        <img src="loading-12.gif" class="image" style="width: 30px; height: 30px; float:right" />
+                                    </TelerikAnimationContainer>*@
+
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (bandera == true)
+
+                        {<h3><label style="text-align: center; display: block;     padding-bottom: 10px;"> Sensores de Temperatura </label></h3>
+                            <div id="graficoEstadoActual">
+                                <TelerikChart Width="100%;" Transitions="false">
+
+                                    <ChartTooltip Visible="true"></ChartTooltip>
+                                    <ChartLegend Visible="true" Position="ChartLegendPosition.Top"></ChartLegend>
+                                    <ChartSeriesItems>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor A (ºC)" Field="@nameof(EstadoActual.s1)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor B (ºC)" Field="@nameof(EstadoActual.s2)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor C (ºC)" Field="@nameof(EstadoActual.s3)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor D (ºC)" Field="@nameof(EstadoActual.s4)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)" Visible="@CountSensor4">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor E (ºC)" Field="@nameof(EstadoActual.s5)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)" Visible="@CountSensor5">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+                                        <ChartSeries Type="ChartSeriesType.Column" Name="Sensor F (ºC)" Field="@nameof(EstadoActual.s6)" Data="@DatosGrafico"
+                                                     CategoryField="@nameof(EstadoActual.mobile)" Visible="@CountSensor6">
+                                            <ChartSeriesLabels Visible="true"></ChartSeriesLabels>
+                                        </ChartSeries>
+
+                                    </ChartSeriesItems>
+                                    <ChartValueAxes>
+                                        <ChartValueAxis>
+                                            <ChartValueAxisLabels Format="{0} ºC"></ChartValueAxisLabels>
+                                        </ChartValueAxis>
+                                    </ChartValueAxes>
+                                    @*<ChartCategoryAxes>
+                                            <ChartCategoryAxis BaseUnit="ChartCategoryAxisBaseUnit.Fit" Type="ChartCategoryAxisType.Category">
+                                                <ChartCategoryAxisLabels Format="{0}" Position="ChartAxisLabelsPosition.Start" />
+                                            </ChartCategoryAxis>
+                                        </ChartCategoryAxes>*@
+                                    <ChartCategoryAxes>
+                                        <ChartCategoryAxis BaseUnit="ChartCategoryAxisBaseUnit.Fit" Type="ChartCategoryAxisType.Category">
+                                            <ChartCategoryAxisLabels Format="{0}" Position="ChartAxisLabelsPosition.Start">
+                                                <ChartCategoryAxisLabelsRotation Angle="-45" />
+                                            </ChartCategoryAxisLabels>
+                                        </ChartCategoryAxis>
+                                    </ChartCategoryAxes>
+
+                                </TelerikChart>
+                            </div>
+                            <hr />
+                            Task.Run(async () =>
+                            {
+                                await fn_graficos();
+                            });
+
+                        }
+
+                        <TelerikGrid Data="@dataGrid" Height="800px" Width="-webkit-fill-available;"
+                                     Pageable="true" Sortable="true" Groupable="true"
+                                     FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+                                     Resizable="true" Reorderable="true" PageSize="20"
+                                     SelectionMode="GridSelectionMode.Single"
+                                     SelectedItemsChanged="@((IEnumerable<EstadoActual> employeeList) => OnSelect(employeeList))"
+                                     SelectedItems="@SelectedItems">
+                            <GridToolBar>
+                                <GridCommandButton Command="ExcelExport" Icon="@IconName.FileExcel">Exportar</GridCommandButton>
+                                <label><TelerikCheckBox @bind-Value="@ExportAllPages" /> Todas las paginas</label>
+                            </GridToolBar>
+                            <GridExport>
+                                <GridExcelExport FileName="EstadoActual_Temperatura" AllPages="@ExportAllPages" />
+                            </GridExport>
+                            <GridColumns>
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.subfleet))" Title="Subflota" Groupable="false" Width="200px" Locked="true" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.plate))" Title="Vehiculo" Groupable="false" Width="200px" Locked="true" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.mobile))" Title="Alias" Groupable="false" Width="200px" Locked="true" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.dategps))" Title="Fecha GPS" Width="200px" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.dateserver))" Title="Fecha Servidor" Width="200px" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.cantidadSensorT))" Title="Nº Sensores" Width="200px" />
+
+
+
+
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.s1))" Title="Sensor A (ºC)" Width="120px" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.s2))" Title="Sensor B (ºC)" Width="120px" />
+                                <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.s3))" Title="Sensor C (ºC)" Width="120px" />
+                                @if (CountSensor4 == true)
+                                {<GridColumn Field="@(nameof(EstadoActual.s4))" Title="Sensor D (ºC)" Width="120px" />}
+
+                                @if (CountSensor5 == true)
+                                {<GridColumn Field="@(nameof(EstadoActual.s5))" Title="Sensor E (ºC)" Width="120px" />}
+
+                                @if (CountSensor6 == true)
+                                {<GridColumn Field="@(nameof(EstadoActual.s6))" Title="Sensor F(ºC)" Width="120px" />}
+
+                                @{
+                                    latLngVisible = true;
+                                    for (int i = 0, len = userSinLatLng.Count(); i < len; i++)
+                                    {
+                                        if (Userid == userSinLatLng[i])
+                                        {
+                                            latLngVisible = false;
+                                        }
+                                    }
+                                    if (latLngVisible)
+                                    {
+                                        <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.location))" Title="Ubicacion" Width="400px" />
+                                        <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.latitude))" Title="Latitude" Width="200px" />
+                                        <GridColumn Field="@(nameof(smstemp.Models.EstadoActual.longitude))" Title="Longitude" Width="200px" />
+                                    }
+                                }
+                            </GridColumns>
+                        </TelerikGrid>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionExito" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-sucess">
+                                    <h3>Aviso</h3><p>
+                                        <TelerikIcon Icon="@IconName.Check" />
+                                        Datos consultados satifactorio.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionAviso" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-alerta">
+                                    <h3>Advertencia</h3><p>
+                                        <TelerikIcon Icon="@IconName.Warning" />
+                                        No hay registro de datos.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacioError" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-error">
+                                    <h3>Error</h3><p>
+                                        <TelerikIcon Icon="@IconName.CloseCircle" />
+                                        Error al consultar los datos.
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                        <div class="notification-container mt-3">
+                            <TelerikAnimationContainer @ref="@NotificacionCargando" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                <div class="k-widget k-popup k-notification k-notification-info-load">
+                                    <p>
+                                        @*style="width: 30px; height: 30px; float:right"*@
+                                        <TelerikIcon Icon="@IconName.Zoom" />
+                                        Verificando...
+
+
+                                    </p>
+                                </div>
+                            </TelerikAnimationContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    @code {
+        [Parameter]
+        public int Userid { get; set; }
+        [Parameter]
+        public int Companyid { get; set; }
+
+        public bool latLngVisible = true;
+        public List<int> userSinLatLng = new List<int>() { 5428, 5429 };
+
+        //bool CargandoGif { get; set; } = false;
+        public TelerikAnimationContainer Cargando { get; set; }
+        public int banderaConsultar { get; set; }
+        public string NombreVehiculoModificar { get; set; }
+        bool isModalVisible { get; set; } = false;
+        public EstadoActual DatoSeleccionado { get; set; }
+        public IEnumerable<EstadoActual> SelectedItems { get; set; } = Enumerable.Empty<EstadoActual>();
+        public float Sensor1 { get; set; }
+        public float Sensor2 { get; set; }
+        public float Sensor3 { get; set; }
+        public float Sensor4 { get; set; }
+        public float Sensor5 { get; set; }
+        public float Sensor6 { get; set; }
+        public object[] MaximoRangoGrafica = new object[] { -40 };
+        bool bandera = true;
+        bool ExportAllPages { get; set; } = true;
+        public int ValorListTipoVehiculo { get; set; }
+
+        bool CountSensor4 = false;
+        bool CountSensor5 = false;
+        bool CountSensor6 = false;
+        IEnumerable<Listados> dataListTipoVehiculo;
+        IEnumerable<smstemp.Models.EstadoActual> dataGrid;
+        public List<EstadoActual> DatosGrafico { get; set; }
+        public List<EstadoActual> DatosGrafico2 { get; set; }
+        //public async Task Cargando()
+        //{
+        //    CargandoGif = true;
+        //    await Task.Delay(2000);
+        //    CargandoGif = false;
+        //}
+
+        public async Task fn_graficos()
+        {
+            await jsRuntime.InvokeVoidAsync("fn_HideShowGraf", "graficoEstadoActual");
+        }
+
+        //[JSInvokable("DifferentMethodName")]
+        //public static Task<bool> ReturnArrayAsync()
+        //{
+
+        //    return Task.FromResult(true);
+        //}
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+                await jsRuntime.InvokeVoidAsync("CountDownEstadoActual.Reset");
+            }
+        }
+        protected override async Task OnInitializedAsync()
+        {
+
+
+            dataListTipoVehiculo = await IListadosService.GetListados(Userid, Companyid, 0, 11);
+            dataGrid = await EstadoActualService.GetEstadoActual(Userid, Companyid, 0);
+            ValorListTipoVehiculo = dataListTipoVehiculo.FirstOrDefault().Id;
+            // 0 = Vehiculos  , 1 =  Cuartos  frios
+            DatosGrafico = dataGrid.ToList();
+            StateHasChanged();
+            await ValidarNumeroSensores();
+            await Task.Delay(3000);
+            SelectedItems = new List<EstadoActual> { dataGrid.FirstOrDefault() };
+            DatoSeleccionado = dataGrid.FirstOrDefault();
+            // await jsRuntime.InvokeVoidAsync("CountDownEstadoActual.Reset");
+
+        }
+        //public TelerikAnimationContainer AnimationContainer { get; set; }
+
+        public async Task Consultar()
+        {
+
+            await jsRuntime.InvokeVoidAsync("CountDownEstadoActual.Detener");
+            //await AnimationContainer.ShowAsync();
+            await Cargando.ShowAsync();
+            await Task.Delay(2000);
+            dataGrid = await EstadoActualService.GetEstadoActual(Userid, Companyid, ValorListTipoVehiculo - 1);
+            DatosGrafico = dataGrid.ToList();
+            await ValidarNumeroSensores();
+            await Task.Delay(1500);
+
+            await jsRuntime.InvokeVoidAsync("CountDownEstadoActual.Reset");
+            await Cargando.HideAsync();
+            //await AnimationContainer.HideAsync();
+        }
+
+        public async Task ValidarNumeroSensores()
+        {
+            CountSensor4 = false; CountSensor5 = false; CountSensor6 = false;
+            DatosGrafico = dataGrid.ToList();
+            if (DatosGrafico.Count() > 0)
+            {
+                bandera = true;
+                for (int i = 0, len = DatosGrafico.Count(); i < len; i++)
+                {
+                    if (DatosGrafico[i].cantidadSensorT == 4 && CountSensor4 == false)
+                    {
+                        CountSensor4 = true;
+                    }
+
+                    if (DatosGrafico[i].cantidadSensorT == 5 && CountSensor5 == false)
+                    {
+                        CountSensor4 = true;
+                        CountSensor5 = true;
+                    }
+
+                    if (DatosGrafico[i].cantidadSensorT == 6 && CountSensor6 == false)
+                    {
+                        CountSensor4 = true;
+                        CountSensor5 = true;
+                        CountSensor6 = true;
+                    }
+
+                }
+            }
+            else { bandera = false; await NotificacionAdvertencia(); }
+        }
+        protected void OnSelect(IEnumerable<EstadoActual> DataEstadoActual)
+        {
+            isModalVisible = true;
+            DatoSeleccionado = DataEstadoActual.FirstOrDefault();
+            SelectedItems = new List<EstadoActual> { DatoSeleccionado };
+            Sensor1 = DatoSeleccionado.s1;
+            Sensor2 = DatoSeleccionado.s2;
+            Sensor3 = DatoSeleccionado.s3;
+            Sensor4 = DatoSeleccionado.s4;
+            Sensor5 = DatoSeleccionado.s5;
+            Sensor6 = DatoSeleccionado.s6;
+            NombreVehiculoModificar = DatoSeleccionado.mobile;
+        }
+
+        public TelerikAnimationContainer NotificacionExito { get; set; }
+        protected async Task NotificacionSucess()
+        {
+            await NotificacionExito.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionExito.HideAsync();
+        }
+        public TelerikAnimationContainer NotificacionAviso { get; set; }
+        protected async Task NotificacionAdvertencia()
+        {
+            await NotificacionAviso.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionAviso.HideAsync();
+        }
+
+        public TelerikAnimationContainer NotificacioError { get; set; }
+        protected async Task NotificacionError()
+        {
+            await NotificacioError.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacioError.HideAsync();
+        }
+        public TelerikAnimationContainer NotificacionCargando { get; set; }
+        protected async Task NotificacionLoad()
+        {
+            await NotificacionCargando.ShowAsync();
+            await Task.Delay(3000);
+            await NotificacionCargando.HideAsync();
+        }
+    }
+
+    <style type="text/css">
+            /* The specially positioned parent of the notification controls its position */
+
+            /*  .k-animation-container {
+            position: fixed;
+            min-height: 200px;
+            right: 2%;
+            bottom: 0%;
+        }*/
+            .notification-container {
+                position: fixed;
+                min-height: 200px;
+                right: 19%;
+                bottom: 7%;
+            }
+
+            .k-notification-info-error {
+                /*rojo error  #D25E52*/
+                border-color: #C62827;
+                background-color: #C62827;
+                color: #fff;
+            }
+
+            .k-notification-info-load {
+                /*rojo error  #D25E52*/
+                border-color: #C62827;
+                background-color: #C62827;
+                color: #fff;
+            }
+
+            .k-notification-info-alerta {
+                /*  rojo aviso*/
+                border-color: #DD7D63;
+                background-color: #DD7D63;
+                color: #fff;
+            }
+
+            .k-notification-info-sucess {
+                /*verde*/
+                border-color: #65B688;
+                background-color: #65B688;
+                color: #fff;
+            }
+    </style>
+</TelerikRootComponent>

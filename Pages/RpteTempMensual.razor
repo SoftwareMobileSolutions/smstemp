@@ -1,0 +1,518 @@
+﻿<TelerikRootComponent>
+    @*@page "/RpteTempMensual"*@
+@page "/RpteTempMensual/{Userid:int}"
+@page "/RpteTempMensual/{Userid:int}/{Companyid:int}"
+@inject smstemp.Interfaces.Blazor_IListados IListadosService
+@inject smstemp.Interfaces.Blazor_IrpteMensual IrpteMensualService
+@inject IJSRuntime jsRuntime
+@inject IJSRuntime JsInterop
+
+@using Telerik.Blazor.Components;
+@using Telerik.DataSource.Extensions
+
+<TelerikAnimationContainer @ref="@Cargando" AnimationType=@AnimationType.SlideUp>
+    <div class="loading-bar" />
+</TelerikAnimationContainer>
+
+<div class="panel panel-default">
+
+    <div class="panel-heading">
+        <h3 class="font-bold no-margins">
+            Reporte de Temperatura Mensual
+        </h3>
+        <small>Reportes de temperatura por mes.</small>
+    </div>
+    <div class="panel-body">
+        <div class="card-deck">
+            <div class="card">
+                <div class="card-header">
+                    <label for="select-date">Tipo:</label>
+                    <TelerikDropDownList @bind-Value="ValorListTipo" Data="@dataListTipo"
+                                         ValueField="Id" TextField="Valor" Width="130px">
+                    </TelerikDropDownList>
+
+                    <label for="select-date">Año:</label>
+                    <TelerikDropDownList @bind-Value="ValorListAnio" Data="@dataListAnio"
+                                         ValueField="Id" TextField="Valor" Width="250px">
+                    </TelerikDropDownList>
+                    <label for="select-date">Mes:</label>
+                    <TelerikDropDownList @bind-Value="ValorListMes" Data="@dataListMes"
+                                         ValueField="Id" TextField="Valor" Width="200px">
+                    </TelerikDropDownList>
+                    <TelerikButton class="btn btn-primary" OnClick="@Consultar">Consultar </TelerikButton>
+
+                </div>
+                <div class="card-body">
+                    @if (bandera == true)
+                    {
+                        <div id="graficoMensual">
+                            <h3><label style="text-align: center; display: block;">  Sensores de Temperatura </label></h3>
+                            <TelerikChart Transitions="false">
+
+                                <ChartTooltip Visible="true">
+                                </ChartTooltip>
+                                <ChartLegend Position="ChartLegendPosition.Top"></ChartLegend>
+                                <ChartSeriesItems>
+                                    @for (int i = 0, len = DatosGrafico.Count(); i < len; i++)
+                                    {
+                                        DatosGrafico[i].diabase = diabase - 1;
+                                        DatosGrafico[i].dia32 = dia32;
+
+                                        <ChartSeries Type="ChartSeriesType.Line" Name="@DatosGrafico[i].placaGraf"
+                                                     Data="@DatosGrafico[i].diasporplacas" Field="@nameof(grafMensual.placaGraf)">
+                                        </ChartSeries>
+                                    }
+                                </ChartSeriesItems>
+                                <ChartCategoryAxes>
+                                    <ChartCategoryAxis Categories="@ListadoSeries"></ChartCategoryAxis>
+                                </ChartCategoryAxes>
+
+                                <ChartValueAxes>
+                                    <ChartValueAxis AxisCrossingValue="@MaximoRangoGrafica">
+                                        <ChartValueAxisLabels Format="{0} ºC"></ChartValueAxisLabels>
+                                    </ChartValueAxis>
+                                </ChartValueAxes>
+                            </TelerikChart>
+                            <hr />
+                        </div>
+                        Task.Run(async () =>
+                        {
+                            await fn_graficos();
+                        });
+
+                    }
+                    <div class="row">
+                        <div class="col-lg-3">
+                            <div class="card-deck">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <label style=" font-size: smaller;">Seleccione un vehículo o varios manteniendo la tecla "Ctrl" y seleccionando con click.</label>
+                                    </div>
+                                    <div class="card-body">
+                                        <TelerikTreeView Data="@FlatData"
+                                                         SelectionMode="@TreeViewSelectionMode.Multiple"
+                                                         SelectedItems="@SelectedItems"
+                                                         SelectedItemsChanged="((IEnumerable<object> items) => SelectedItemsChangedHandler(items))">
+                                        </TelerikTreeView>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-9">
+
+                            <TelerikGrid Data="@dataGrid" Height="800px" Width="-webkit-fill-available;"
+                                         Pageable="true" Sortable="true" Groupable="true"
+                                         FilterMode="Telerik.Blazor.GridFilterMode.FilterRow"
+                                         Resizable="true" Reorderable="true" PageSize="50">
+
+                                <GridToolBar>
+                                    <GridCommandButton Command="ExcelExport" Icon="@IconName.FileExcel">Exportar</GridCommandButton>
+                                    <label><TelerikCheckBox @bind-Value="@ExportAllPages" /> Todas las paginas</label>
+                                </GridToolBar>
+                                <GridExport>
+                                    <GridExcelExport FileName="Mensual_Temperatura" AllPages="@ExportAllPages" />
+                                </GridExport>
+                                <GridColumns>
+                                    @*<GridColumn Field="@(nameof(rpteAlertasDiarias.mobileid))" Title="id" Width="200px" />*@
+                                    <GridColumn Field="@(nameof(rpteMensual.subflota))" Title="Subflota" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteMensual.placa))" Title="Placa" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteMensual.alias))" Title="Alias" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteMensual.valorTemp))" Title="@titulo" Groupable="false" Width="200px" Locked="true" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d1))" Title="Día 1" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d2))" Title="Día 2" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d3))" Title="Día 3" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d4))" Title="Día 4" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d5))" Title="Día 5" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d6))" Title="Día 6" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d7))" Title="Día 7" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d8))" Title="Día 8" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d9))" Title="Día 9" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d10))" Title="Día 10" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d11))" Title="Día 11" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d12))" Title="Día 12" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d13))" Title="Día 13" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d14))" Title="Día 14" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d15))" Title="Día 15" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d16))" Title="Día 16" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d17))" Title="Día 17" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d18))" Title="Día 18" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d19))" Title="Día 19" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d20))" Title="Día 20" Width="120px" />                                                        <GridColumn Field="@(nameof(rpteMensual.d21))" Title="Día 21" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d22))" Title="Día 22" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d23))" Title="Día 23" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d24))" Title="Día 24" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d25))" Title="Día 25" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d26))" Title="Día 26" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d27))" Title="Día 27" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d28))" Title="Día 28" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d29))" Title="Día 29" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d30))" Title="Día 30" Width="120px" />
+                                    <GridColumn Field="@(nameof(rpteMensual.d31))" Title="Día 31" Width="120px" />
+                                </GridColumns>
+                            </TelerikGrid>
+
+                            <div class="notification-container mt-3">
+                                <TelerikAnimationContainer @ref="@NotificacionExito" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                    <div class="k-widget k-popup k-notification k-notification-info-sucess">
+                                        <h3>Aviso</h3><p>
+                                            <TelerikIcon Icon="@IconName.Check" />
+                                            Datos consultados satifactorio.
+                                        </p>
+                                    </div>
+                                </TelerikAnimationContainer>
+                            </div>
+                            <div class="notification-container mt-3">
+                                <TelerikAnimationContainer @ref="@NotificacionAviso" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                    <div class="k-widget k-popup k-notification k-notification-info-alerta">
+                                        <h3>Advertencia</h3><p>
+                                            <TelerikIcon Icon="@IconName.Warning" />
+                                            No hay registro de datos.
+                                        </p>
+                                    </div>
+                                </TelerikAnimationContainer>
+                            </div>
+                            <div class="notification-container mt-3">
+                                <TelerikAnimationContainer @ref="@NotificacioError" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                    <div class="k-widget k-popup k-notification k-notification-info-error">
+                                        <h3>Error</h3><p>
+                                            <TelerikIcon Icon="@IconName.CloseCircle" />
+                                            Error al consultar los datos.
+                                        </p>
+                                    </div>
+                                </TelerikAnimationContainer>
+                            </div>
+                            <div class="notification-container mt-3">
+                                <TelerikAnimationContainer @ref="@NotificacionCargando" Width="300px" Height="200px" Top="50%" AnimationType=@AnimationType.SlideUp>
+                                    <div class="k-widget k-popup k-notification k-notification-info-load">
+                                        <p>
+                                            @*style="width: 30px; height: 30px; float:right"*@
+                                            <TelerikIcon Icon="@IconName.Zoom" />
+                                            Verificando...
+
+
+                                        </p>
+                                    </div>
+                                </TelerikAnimationContainer>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public int Userid { get; set; }
+    [Parameter]
+
+    public int Companyid { get; set; }
+    public string[] Categories = new string[] {
+    "Día 1",    "Día 2",    "Día 3",    "Día 4",    "Día 5",    "Día 6",    "Día 7",    "Día 8",    "Día 9",    "Día 10",
+    "Día 11",    "Día 12",    "Día 13",    "Día 14",    "Día 15",    "Día 16",    "Día 17",    "Día 18",    "Día 19",    "Día 20",
+    "Día 21",    "Día 22",    "Día 23",    "Día 24",    "Día 25",    "Día 26",    "Día 27",    "Día 28",    "Día 29",    "Día 30",    "Día 31"
+    };
+    public TelerikAnimationContainer Cargando { get; set; }
+    public string[] CategoriesSeries;
+    public object[] MaximoRangoGrafica = new object[] { -40 };
+    public bool bandera { get; set; } = false;
+    public object[] AxisCrossingValue = new object[] { -40 };
+    bool ExportAllPages { get; set; } = true;
+    public int ValorListTipo { get; set; }
+    public string titulo { get; set; }
+    public int ValorListAnio { get; set; }
+    public int ValorListMes { get; set; }
+    bool columnVisible7 = false;
+    public List<grafMensual> DatosGrafico { get; set; }
+    public List<grafSeries> DatosGraficoSeries { get; set; }
+    IEnumerable<Listados> dataListAnio;
+    IEnumerable<Listados> dataListMes;
+    IEnumerable<Listados> dataListTipo;
+    IEnumerable<smstemp.Models.rpteMensual> dataGrid;
+    IEnumerable<smstemp.Models.grafMensual> dataGridGraf;
+    IEnumerable<smstemp.Models.grafSeries> dataGridSerie;
+    public IEnumerable<Arbol> FlatData { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        dataListAnio = await IListadosService.GetListados(Userid, Companyid, 0, 5);
+        dataListMes = await IListadosService.GetListados(Userid, Companyid, 0, 6);
+        dataListTipo = await IListadosService.GetListados(Userid, Companyid, 0, 4);
+        FlatData = await IListadosService.GetArbol(Userid, Companyid, 0, 12);
+        SelecccionDefaultList();
+        titulo = "Valor";
+
+    }
+    public IEnumerable<object> SelectedItems { get; set; } = new List<object>();
+    public string ArbolMobile { get; set; }
+    void SelectedItemsChangedHandler(IEnumerable<object> items)
+    {
+        SelectedItems = items;
+        try
+        {
+            //CAST A OBJECT PARA PODER LISTAR PO POSICION
+            var list2 = items.Cast<Arbol>().ToList();
+            ArbolMobile = "";
+            for (int i = 0, len = SelectedItems.Count(); i < len; i++)
+            {
+                // ASIGNACION POR POSICION A CADENA DE MOBILES
+                ArbolMobile = ArbolMobile + list2[i].Id + ",";
+            }
+        }
+        catch (Exception) {
+            Task.Run(async() => {
+                await NotificacionError();
+            });
+
+        }
+    }
+    public void SelecccionDefaultList()
+    {
+
+        /*-------Cargas en Select(0) primer item de drodpwnlist--------------------*/
+        ValorListAnio = dataListAnio.FirstOrDefault().Id;
+        ValorListMes = dataListMes.FirstOrDefault().Id;
+        ValorListTipo = dataListTipo.FirstOrDefault().Id;
+
+    }
+    public async Task fn_graficos()
+    {
+        await jsRuntime.InvokeVoidAsync("fn_HideShowGraf", "graficoMensual");
+    }
+
+    //------------------------- Carga de datos de boton consultar-------------------------------
+    object[] chartSeriesData = new object[] { 1, 2, 3 };
+    int contador = 0;
+    int cantidadSeries = 0;
+    bool ChartVisible { get; set; } = true;
+    protected async Task Consultar()
+    {
+        await Cargando.ShowAsync();
+        //BarCargando();
+        //SETEAR DATA Y LINEAS DE GRAFICOS ..... AL RENDERIZAR EN 0 NO ENTRA A BANDERA Y
+        //ELIMINAR LA GRAFICA Y AL VOLVER A DARLE PERMISO VUELVE A CREARLA
+        if (contador > 0) { DatosGrafico.Clear(); list.Clear(); bandera = false; await Task.Delay(30); bandera = true; StateHasChanged(); }
+        contador++;
+        if (ValorListTipo == 1)
+        {
+            titulo = "Valor Minimo";
+            dataGrid = await IrpteMensualService.GetObtenerMensualMin(ValorListMes, ValorListAnio, Companyid, 1, ArbolMobile);
+            dataGridGraf = await IrpteMensualService.GetObtenerMensualGraf(ValorListMes, ValorListAnio, Companyid, 0, ArbolMobile);
+            dataGridSerie = await IrpteMensualService.GetObtenerMensualGrafSerie(ValorListMes, ValorListAnio, Companyid, 2, ArbolMobile);
+            DatosGraficoSeries = dataGridSerie.ToList();
+            DatosGrafico = dataGridGraf.ToList();
+            if (dataGrid.Count() == 0) { bandera = false; await NotificacionAdvertencia(); }
+            else
+            {
+                Series(); 
+                
+                bandera = true;
+            }
+        }
+        else
+        {
+            titulo = "Valor Máximo";
+            dataGrid = await IrpteMensualService.GetObtenerMensualMax(ValorListMes, ValorListAnio, Companyid, 1, ArbolMobile);
+            dataGridGraf = await IrpteMensualService.GetObtenerMensualGrafMax(ValorListMes, ValorListAnio, Companyid, 0, ArbolMobile);
+            dataGridSerie = await IrpteMensualService.GetObtenerMensualGrafMaxSerie(ValorListMes, ValorListAnio, Companyid, 2, ArbolMobile);
+            DatosGrafico = dataGridGraf.ToList();
+            DatosGraficoSeries = dataGridSerie.ToList();
+            if (dataGrid.Count() == 0) { bandera = false; await NotificacionAdvertencia(); }
+            else
+            {
+                Series(); bandera = true;
+            }
+        }
+        await Task.Delay(1500);
+        await Cargando.HideAsync();
+    }
+    public List<grafSeries> SeriesListado { get; set; }
+    List<String> list = new List<String>();
+
+    public string[] ListadoSeries;
+    public int diabase;
+    public int dia32;
+    protected void Series()
+    {
+        var data = (IEnumerable<smstemp.Models.grafSeries>)dataGridSerie;
+        SeriesListado = (data as IEnumerable<grafSeries>).ToList();
+        diabase = 0;
+        dia32 = 0;
+        for (int i = 0, len = dataGridSerie.Count(); i < len; i++)
+        {
+            //list.Add(Convert.ToString("Día " + i));
+            if (SeriesListado[i].dia == "32")
+            {
+                dia32 = 1;
+            }
+            else
+            {
+                SeriesListado.Add(new grafSeries { dia = Convert.ToString(SeriesListado[i].dia) });
+                list.Add(Convert.ToString("Día " + SeriesListado[i].dia));
+                if (i == 0)
+                {
+                    diabase = Convert.ToInt32(SeriesListado[i].dia);
+                }
+            }
+        }
+
+        ListadoSeries = list.ToArray();
+        //ListadoSeries =  set.toArray(String[]::new)
+        //await jsRuntime.InvokeAsync<string>("console.log", list);
+        //await jsRuntime.InvokeAsync<string>("console.log", ListadoSeries);
+    }
+
+
+    public TelerikAnimationContainer NotificacionExito { get; set; }
+    protected async Task NotificacionSucess()
+    {
+        await NotificacionExito.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionExito.HideAsync();
+    }
+    public TelerikAnimationContainer NotificacionAviso { get; set; }
+    protected async Task NotificacionAdvertencia()
+    {
+        await NotificacionAviso.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionAviso.HideAsync();
+    }
+
+    public TelerikAnimationContainer NotificacioError { get; set; }
+    protected async Task NotificacionError()
+    {
+        await NotificacioError.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacioError.HideAsync();
+    }
+    public TelerikAnimationContainer NotificacionCargando { get; set; }
+    protected async Task NotificacionLoad()
+    {
+        await NotificacionCargando.ShowAsync();
+        await Task.Delay(3000);
+        await NotificacionCargando.HideAsync();
+    }
+
+
+
+    //protected async Task Columnas()
+    //{
+    //    var data = (IEnumerable<SMSKtemp.Data.rpteMensual>)dataGrid;
+    //    GridData = (data as IEnumerable<rpteMensual>).ToList();
+    //    await jsRuntime.InvokeAsync<string>("console.log", GridData);
+    //    object ddd = "d" + 1;
+    //    string[] lista = new[] { "d1", "d2", "d3" };
+    //    for (int j = 1; j < 31; j++) {
+    //        for (int i = 0, len = GridData.Count(); i < len; i++){
+    //            var suma = 0.0;
+    //            suma = Convert.ToDouble(GridData[i].d1);
+    //            //suma = Convert.ToDouble(GridData[i].lista[0]);
+    //            await jsRuntime.InvokeAsync<string>("console.log", GridData[i].d1);
+    //        }
+    //    }
+
+    //    for (int i = 0, len = GridData.Count(); i < len; i++)
+    //    {
+    //        var suma = 0.0;
+    //        suma = Convert.ToDouble(GridData[1].d1);
+    //        await jsRuntime.InvokeAsync<string>("console.log", GridData[i].d1);
+    //    }
+    //    for (int i = 0, len = GridData.Count(); i < len; i++)
+    //    {
+    //        var suma = 0.0;
+    //        suma = Convert.ToDouble(GridData[i].d2);
+    //        //await jsRuntime.InvokeAsync<string>("console.log", GridData[i].d1);
+    //    }
+
+
+    //}
+
+
+
+
+
+    //protected async Task ReadItems(GridReadEventArgs args)
+    //{
+    //    Console.WriteLine("data requested: " + args.Request);
+
+    //    //you need to update the total and data variables
+    //    //the ToDataSourceResult() extension method can be used to perform the operations over the full data collection
+    //    //in a real case, you can call data access layer and remote services here instead, to fetch only the necessary data
+
+    //    //await Task.Delay(2000); //simulate network delay from a real async call
+
+    //    var datasourceResult = dataGrid.ToDataSourceResult(args.Request);
+
+    //    GridData = (datasourceResult.Data as IEnumerable<rpteMensual>).ToList();
+    //    Total = datasourceResult.Total;
+
+    //    StateHasChanged();
+    //}
+
+    //private void UpdateItem(GridCommandEventArgs args)
+    //{
+    //    var argsItem = args.Item as rpteMensual;
+    //    var index = GridData.FindIndex(i => i.d1 == argsItem.d1);
+    //    if (index != -1)
+    //    {
+    //        GridData[index] = argsItem;
+    //    }
+    //}
+
+    //void ReloadPage()
+    //{
+    //    JsInterop.InvokeVoidAsync("window.location.reload");
+    //}
+
+
+}
+
+
+
+<style type="text/css">
+    /* The specially positioned parent of the notification controls its position */
+
+    /*  .k-animation-container {
+        position: fixed;
+        min-height: 200px;
+        right: 2%;
+        bottom: 0%;
+    }*/
+    .notification-container {
+        position: fixed;
+        min-height: 200px;
+        right: 19%;
+        bottom: 7%;
+    }
+
+    .k-notification-info-error {
+        /*rojo error  #D25E52*/
+        border-color: #C62827;
+        background-color: #C62827;
+        color: #fff;
+    }
+
+    .k-notification-info-load {
+        /*rojo error  #D25E52*/
+        border-color: #C62827;
+        background-color: #C62827;
+        color: #fff;
+    }
+
+    .k-notification-info-alerta {
+        /*  rojo aviso*/
+        border-color: #DD7D63;
+        background-color: #DD7D63;
+        color: #fff;
+    }
+
+    .k-notification-info-sucess {
+        /*verde*/
+        border-color: #65B688;
+        background-color: #65B688;
+        color: #fff;
+    }
+</style>
+</TelerikRootComponent>
